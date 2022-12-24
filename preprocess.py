@@ -30,14 +30,14 @@ class Preprocess:
         """
         self.df.to_json(path, orient="records")
 
-# Links preprocessing
+# Links preprocessing methods
 
     @staticmethod
     def __find_links(row: pd.DataFrame) -> list:
         """
         method finds all links mentioned in text
         :param row: row of a dataframe
-        :return: list contains the links made up from tuples
+        :return: list which contains the links made up from tuples
         """
         links = re.findall("(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
                            row['text'])
@@ -61,3 +61,73 @@ class Preprocess:
         """
         self.df['links'] = self.df.apply(self.__find_links, axis=1)
         self.df['text'] = self.df.apply(self.__remove_links, axis=1)
+
+# References preprocessing methods
+
+    @staticmethod
+    def __retweet_classify(row: pd.DataFrame) -> int:
+        """
+        method classifies if given text is retweet or not
+        :return: 1 if is retweet, 0 if not
+        """
+        return 1 if re.search(r"^RT @\w+", row['text']) else 0
+
+    @staticmethod
+    def __retweet_author(row: pd.DataFrame):  # @TODO: complete return type
+        """
+        methos finds to whom tweet was referring
+        :param row: row from given dataframe
+        :return: 0 if given tweet weren't referring to no one,
+                 or nickname of the account to whom tweet was referring
+        """
+        if row['is_retweet'] == 1:
+            result = re.search(r"^RT @\w+", row['text']).group(0)
+            return re.sub(r"^RT @", "", result)
+        else:
+            return 0
+
+    @staticmethod
+    def __find_references(row: pd.DataFrame) -> list:
+        """
+        method finds all references in text
+        :param row: row from dataframe
+        :return: list of all references
+        """
+        references = re.findall(r"@\w+", row['text'])
+        #  @TODO list comprehension
+        res = []
+        for ref in references:
+            ref = re.sub(r"^@", "", ref)
+            res.append(ref)
+        return res if row['is_retweet'] == 0 else res[1:]
+
+    @staticmethod
+    def __remove_references(row: pd.DataFrame) -> str:
+        """
+        method removes all the references from text 
+        (both retweets and normal references)
+        :param row: row from dataframe
+        :return: list of all references
+        """
+        new_text = row['text']
+        if row['is_retweet']:
+            new_text = re.sub(r"^RT @\w+:", "", new_text)
+        new_text = re.sub(r"@\w+", "", new_text)
+        return new_text
+
+    def preprocess_references(self) -> None:
+        """
+        method removes all kind of references from text 
+        and adds new columns:
+        * is_retweet - containing binary information if it was a retweet
+        * retweet_of - with the nickname  to whom tweet was referring
+        * references - list of all references which occured in text
+        """
+        self.df['is_retweet'] = self.df.apply(
+            lambda row: self.__retweet_classify(row), axis=1)
+        self.df['retweet_of'] = self.df.apply(
+            lambda row: self.__retweet_author(row), axis=1)
+        self.df['references'] = self.df.apply(
+            lambda row: self.__find_references(row), axis=1)
+        self.df['text'] = self.df.apply(
+            lambda row: self.__remove_references(row), axis=1)
