@@ -1,5 +1,6 @@
 import pandas as pd
 import re
+import emoji
 
 MENTAL_HEALTH = './data/Mental-Health-Twitter.csv'
 SUSPICIOUS_COMMUNICATION = './data/Suspicious Communication on Social Platforms.csv'
@@ -160,3 +161,48 @@ class Preprocess:
             lambda row: self.__find_hashtags(row), axis=1)
         self.df['text'] = self.df.apply(
             lambda row: self.__remove_hashtags(row), axis=1)
+
+# Emoji translate
+
+    @staticmethod
+    def __find_emojis(row: pd.DataFrame) -> set:
+        """
+        method finds all occurences of emoji in text
+        :param row: row from dataframe
+        :return: set of emojis that occured in text
+        """
+        return set(emoji.distinct_emoji_list(row['text']))
+
+    @staticmethod
+    def __translate_emojis(row: pd.DataFrame) -> list:
+        """
+        method translates all emojis in 'emojis' column
+        :param row: row from dataframe
+        :return: list of emojis, but translated to text
+        """
+        translated_emojis = [emoji.demojize(emoji_occ, delimiters=("", ""))
+                             for emoji_occ in row['emojis']]
+        return translated_emojis
+
+    @staticmethod
+    def __remove_emojis(row: pd.DataFrame) -> str:
+        """
+        method removes all emojis from text
+        :param row: row from dataframe
+        :return: clean text without emojis
+        """
+        return emoji.replace_emoji(row['text'])
+
+    def preprocess_emoji(self) -> None:
+        """
+        method perfomrs full emoji preprocess,
+        removes emojis from text,
+        creates new column 'emojis' with translated emojis that occured
+        in text
+        """
+        self.df['emojis'] = self.df.apply(
+            lambda row: self.__find_emojis(row), axis=1)
+        self.df['emojis'] = self.df.apply(
+            lambda row: self.__translate_emojis(row), axis=1)
+        self.df['text'] = self.df.apply(
+            lambda row: self.__remove_emojis(row), axis=1)
