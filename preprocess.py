@@ -94,12 +94,8 @@ class Preprocess:
         :return: list of all references
         """
         references = re.findall(r"@\w+", row['text'])
-        #  @TODO list comprehension
-        res = []
-        for ref in references:
-            ref = re.sub(r"^@", "", ref)
-            res.append(ref)
-        return res if row['is_retweet'] == 0 else res[1:]
+        all_references = [re.sub(r"^@", "", ref) for ref in references]
+        return all_references if row['is_retweet'] == 0 else references[1:]
 
     @staticmethod
     def __remove_references(row: pd.DataFrame) -> str:
