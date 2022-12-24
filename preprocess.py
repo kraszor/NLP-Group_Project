@@ -238,3 +238,12 @@ class Preprocess:
         self.df['subjectivity'] = [text.sentiment.subjectivity 
                                    for text in sentiment_objects]
         self.df['sentiment'] = self.df.apply(lambda row: self.__sentiment(row), axis=1)
+
+# Lowercase convertion
+
+    def lowercase_convertion(self) -> None:
+        """
+        converts all word to lowercase notation
+        :return: list with text after converting to lowercase
+        """
+        self.df['text'] = self.df['text'].apply(lambda text: text.lower())
