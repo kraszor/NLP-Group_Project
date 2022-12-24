@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import emoji
+from textblob import TextBlob
 
 MENTAL_HEALTH = './data/Mental-Health-Twitter.csv'
 SUSPICIOUS_COMMUNICATION = './data/Suspicious Communication on Social Platforms.csv'
@@ -206,3 +207,34 @@ class Preprocess:
             lambda row: self.__translate_emojis(row), axis=1)
         self.df['text'] = self.df.apply(
             lambda row: self.__remove_emojis(row), axis=1)
+
+# Sentiment analysis
+
+    @staticmethod
+    def __sentiment(row: pd.DataFrame) -> str:
+        """
+        method translates sentiment od the text from numerical
+        divides sentiment to: positive, neutral, negative
+        :return: name of the sentiment
+        """
+        if row['polarity'] > 0:
+            return 'Positive'
+        elif row['polarity'] < 0:
+            return 'Negative'
+        else:
+            return 'Neutral'
+
+    def _sentiment_analysis(self) -> None:
+        """
+        method creates new columns:
+        * polarity - with the senimenty polarity of the text (numerical value)
+        * subjectivity - with numerical subjectivity of the text
+        * sentiment - string with translates and simmplifies polarity
+        """
+        text_in_list = self.df['text'].tolist()
+        sentiment_objects = [TextBlob(text) for text in text_in_list]
+        self.df['polarity'] = [text.sentiment.polarity 
+                               for text in sentiment_objects]
+        self.df['subjectivity'] = [text.sentiment.subjectivity 
+                                   for text in sentiment_objects]
+        self.df['sentiment'] = self.df.apply(lambda row: self.__sentiment(row), axis=1)
