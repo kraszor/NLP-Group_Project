@@ -1,7 +1,10 @@
 import pandas as pd
 import re
 import emoji
+import string
+
 from textblob import TextBlob
+
 
 MENTAL_HEALTH = './data/Mental-Health-Twitter.csv'
 SUSPICIOUS_COMMUNICATION = './data/Suspicious Communication on Social Platforms.csv'
@@ -247,3 +250,22 @@ class Preprocess:
         :return: list with text after converting to lowercase
         """
         self.df['text'] = self.df['text'].apply(lambda text: text.lower())
+
+# Punctuation removal
+
+    @staticmethod
+    def __remove_punctuation_row(row: pd.DataFrame) -> str:
+        """
+        remove punctuation from text
+        :param row: row from dataframe
+        :return: text after punctuation removal
+        """
+        return "".join([char for char in row['text']
+                        if char not in string.punctuation])
+
+    def _remove_punctuation(self) -> None:
+        """
+        method removes punctuation from whole dataset
+        """
+        self.df['text'] = self.df.apply(
+            lambda row: self.__remove_punctuation_row(row), axis=1)
