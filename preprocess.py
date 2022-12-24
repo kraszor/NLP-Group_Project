@@ -104,7 +104,7 @@ class Preprocess:
     @staticmethod
     def __remove_references(row: pd.DataFrame) -> str:
         """
-        method removes all the references from text 
+        method removes all the references from text
         (both retweets and normal references)
         :param row: row from dataframe
         :return: list of all references
@@ -131,3 +131,36 @@ class Preprocess:
             lambda row: self.__find_references(row), axis=1)
         self.df['text'] = self.df.apply(
             lambda row: self.__remove_references(row), axis=1)
+
+# Hashtag preprocessing methods
+
+    @staticmethod
+    def __find_hashtags(row: pd.DataFrame) -> list:
+        """
+        method finds all hashtags in text
+        :param row: row from dataframe
+        :return: list of all words mentioned as hashtags
+        """
+        hashtags = re.findall(r"#\w+", row['text'])
+        all_hashtags = [re.sub(r"^#", "", hashtag) for hashtag in hashtags]
+        return all_hashtags
+
+    @staticmethod
+    def __remove_hashtags(row: pd.DataFrame) -> str:
+        """
+        method removes all hashtags from text
+        :param row: row from dataframe
+        :return: clean text free of hashtags
+        """
+        new_text = re.sub(r"#", "", row['text'])
+        return new_text
+
+    def preprocess_hashtags(self) -> None:
+        """
+        method creates new column with list of all hashtags
+        which occured in text and removes sign '#' from tweet text
+        """
+        self.df['hashtags'] = self.df.apply(
+            lambda row: self.__find_hashtags(row), axis=1)
+        self.df['text'] = self.df.apply(
+            lambda row: self.__remove_hashtags(row), axis=1)
