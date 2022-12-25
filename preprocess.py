@@ -326,7 +326,11 @@ class Preprocess:
     @staticmethod
     def __spellcheck_on_row(row: pd.DataFrame) -> str:
         """
-        
+        method performs spellcheck on one row (one tweet),
+        if word is misspelled method corrects it to the most similar word
+        if it can't associate it with anything we just leave this word
+        :param row: row from dataframe
+        :return: text after spellcheck
         """
         text_tokens = word_tokenize(row['text'])
         dictionary = Dictionary.from_files('en_US')
@@ -346,7 +350,7 @@ class Preprocess:
         
     def spellcheck(self) -> None:
         """
-        
+        function performs spellchceck on whole dataframe
         """
         self.df['text'] = self.df.apply(
             lambda row: self.__spellcheck_on_row(row), axis=1
