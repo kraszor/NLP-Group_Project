@@ -34,11 +34,42 @@ class Preprocess:
             self.df.rename(columns={"comments": "text", "tagging": "target"},
                            inplace=True)
 
-    def save_to_json(self, path: str) -> None:
+        self.path_to_save = './results/'
+
+        if path_to_file == MENTAL_HEALTH:
+            self.path_to_save += 'mental_health'
+        elif path_to_file == SUSPICIOUS_COMMUNICATION:
+            self.path_to_save += 'suspicious_communiaction'
+        else:
+            self.path_to_save += 'disaster'
+
+    def save_to_json(self, path: str = '') -> None:
         """
         method saving dataframe to .json file
+        if path is not specified, dataframe is saved in
+        './results/{dataframe_name}'
         """
-        self.df.to_json(path, orient="records")
+        path = self.path_to_save if path == '' else path
+        self.df.to_json(path, orient="records", lines=True)
+
+    def preprocess(self) -> None:
+        """
+        most important method here, performs full dataframe preprocess
+        changes occurences in 'text' column
+        adds changes to dataframe in place
+        saves to .json file
+        """
+        self.links_preprocess()
+        self.references_preprocess()
+        self.hashtags_preprocess()
+        self.emoji_preprocess()
+        self.spellcheck()
+        self.sentiment_analysis()
+        self.punctuation_remove()
+        self.lowercase_convertion()
+        self.remove_stopwords()
+        self.lemmatization()
+        self.save_to_json()
 
 # Links preprocessing methods
 
