@@ -3,6 +3,8 @@ import re
 import emoji
 import string
 
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
 from textblob import TextBlob
 
 
@@ -268,4 +270,28 @@ class Preprocess:
         method removes punctuation from whole dataset
         """
         self.df['text'] = self.df.apply(
-            lambda row: self.__remove_punctuation_row(row), axis=1)
+            lambda row: self.__remove_punctuation_row(row), axis=1
+            )
+
+# Lemmatization
+
+    @staticmethod
+    def _lemmatize_text(row: pd.DataFrame) -> str:
+        """
+        method performs lemmatization on one row
+        :param row: row from dataframe
+        :return: text after lemmatization
+        """
+        lemmatizer = WordNetLemmatizer()
+        tokens = word_tokenize(row['text'])
+        new_text = [lemmatizer.lemmatize(token) for token in tokens]
+
+        return ' '.join(new_text)
+
+    def lemmatize(self) -> None:
+        """
+        method performs lemmatization on whole dataframe
+        """
+        self.df['text'] = self.df.apply(
+            lambda row: self._lemmatize_text(row), axis=1
+            )
