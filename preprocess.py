@@ -11,7 +11,8 @@ from spylls.hunspell import Dictionary
 
 
 MENTAL_HEALTH = './data/Mental-Health-Twitter.csv'
-SUSPICIOUS_COMMUNICATION = './data/Suspicious Communication on Social Platforms.csv'
+SUSPICIOUS_COMMUNICATION = ('./data/Suspicious Communication on ' +
+                            'Social Platforms.csv')
 DISASTER = './data/disaster_tweets/train.csv'
 
 
@@ -48,7 +49,8 @@ class Preprocess:
         :param row: row of a dataframe
         :return: list which contains the links made up from tuples
         """
-        links = re.findall("(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
+        links = re.findall("(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))" +
+                           "([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
                            row['text'])
         return links
     
@@ -59,13 +61,14 @@ class Preprocess:
         :param row: row from dataframe
         :return: new clean text without links
         """
-        new_text = re.sub("(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", "",
+        new_text = re.sub("(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))" +
+                          "([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", "",
                           row['text'])
         return new_text
 
     def preprocess_links(self) -> None:
         """
-        method removes links in 'text' column and 
+        method removes links in 'text' column and
         adds new column 'links' containing this links
         """
         self.df['links'] = self.df.apply(self.__find_links, axis=1)
@@ -122,7 +125,7 @@ class Preprocess:
 
     def preprocess_references(self) -> None:
         """
-        method removes all kind of references from text 
+        method removes all kind of references from text
         and adds new columns:
         * is_retweet - containing binary information if it was a retweet
         * retweet_of - with the nickname  to whom tweet was referring
@@ -240,11 +243,12 @@ class Preprocess:
         """
         text_in_list = self.df['text'].tolist()
         sentiment_objects = [TextBlob(text) for text in text_in_list]
-        self.df['polarity'] = [text.sentiment.polarity 
+        self.df['polarity'] = [text.sentiment.polarity
                                for text in sentiment_objects]
-        self.df['subjectivity'] = [text.sentiment.subjectivity 
+        self.df['subjectivity'] = [text.sentiment.subjectivity
                                    for text in sentiment_objects]
-        self.df['sentiment'] = self.df.apply(lambda row: self.__sentiment(row), axis=1)
+        self.df['sentiment'] = self.df.apply(
+            lambda row: self.__sentiment(row), axis=1)
 
 # Lowercase convertion
 
@@ -343,11 +347,11 @@ class Preprocess:
                 try:
                     new_text.append(next(dictionary.suggest(word)))
                 except StopIteration:
-                    print(f"Very misspelled word occurred: {word}") 
+                    print(f"Very misspelled word occurred: {word}")
                     new_text.append(word)
 
         return ' '.join(new_text)
-        
+
     def spellcheck(self) -> None:
         """
         function performs spellchceck on whole dataframe
