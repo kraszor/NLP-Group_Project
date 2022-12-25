@@ -7,7 +7,7 @@ from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from textblob import TextBlob
-
+from spylls.hunspell import Dictionary
 
 
 MENTAL_HEALTH = './data/Mental-Health-Twitter.csv'
@@ -319,4 +319,35 @@ class Preprocess:
         """
         self.df['text'] = self.df.apply(
             lambda row: self.__remove_stopwords_row(row), axis=1
+            )
+
+# Spellcheck
+
+    @staticmethod
+    def __spellcheck_on_row(row: pd.DataFrame) -> str:
+        """
+        
+        """
+        text_tokens = word_tokenize(row['text'])
+        dictionary = Dictionary.from_files('en_US')
+        new_text = []
+
+        for word in text_tokens:
+            if dictionary.lookup(word):
+                new_text.append(word)
+            else:
+                try:
+                    new_text.append(next(dictionary.suggest(word)))
+                except StopIteration:
+                    print(f"Very misspelled word occurred: {word}") 
+                    new_text.append(word)
+
+        return ' '.join(new_text)
+        
+    def spellcheck(self) -> None:
+        """
+        
+        """
+        self.df['text'] = self.df.apply(
+            lambda row: self.__spellcheck_on_row(row), axis=1
             )
