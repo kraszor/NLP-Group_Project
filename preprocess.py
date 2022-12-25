@@ -63,6 +63,7 @@ class Preprocess:
         self.references_preprocess()
         self.hashtags_preprocess()
         self.emoji_preprocess()
+        self.remove_unicode_chars()
         self.spellcheck()
         self.sentiment_analysis()
         self.punctuation_remove()
@@ -389,4 +390,21 @@ class Preprocess:
         """
         self.df['text'] = self.df.apply(
             lambda row: self.__spellcheck_on_row(row), axis=1
+            )
+
+# Check english words
+
+    @staticmethod
+    def __remove_unicode_chars_row(row: pd.DataFrame) -> str:
+        """
+        method checks if all words are in english,
+        if not unknown words are removed
+        """
+        return row['text'].encode("ascii", "ignore").decode()
+#        return ' '.join(word for word in wordpunct_tokenize(row['text'])
+#                        if word.isalpha())
+
+    def remove_unicode_chars(self) -> None:
+        self.df['text'] = self.df.apply(
+            lambda row: self.__remove_unicode_chars_row(row), axis=1
             )
