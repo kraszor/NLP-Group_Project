@@ -66,7 +66,7 @@ class Preprocess:
                           row['text'])
         return new_text
 
-    def preprocess_links(self) -> None:
+    def links_preprocess(self) -> None:
         """
         method removes links in 'text' column and
         adds new column 'links' containing this links
@@ -123,7 +123,7 @@ class Preprocess:
         new_text = re.sub(r"@\w+", "", new_text)
         return new_text
 
-    def preprocess_references(self) -> None:
+    def references_preprocess(self) -> None:
         """
         method removes all kind of references from text
         and adds new columns:
@@ -163,7 +163,7 @@ class Preprocess:
         new_text = re.sub(r"#", "", row['text'])
         return new_text
 
-    def preprocess_hashtags(self) -> None:
+    def hashtags_preprocess(self) -> None:
         """
         method creates new column with list of all hashtags
         which occured in text and removes sign '#' from tweet text
@@ -204,7 +204,7 @@ class Preprocess:
         """
         return emoji.replace_emoji(row['text'])
 
-    def preprocess_emoji(self) -> None:
+    def emoji_preprocess(self) -> None:
         """
         method perfomrs full emoji preprocess,
         removes emojis from text,
@@ -234,7 +234,7 @@ class Preprocess:
         else:
             return 'Neutral'
 
-    def _sentiment_analysis(self) -> None:
+    def sentiment_analysis(self) -> None:
         """
         method creates new columns:
         * polarity - with the senimenty polarity of the text (numerical value)
@@ -262,7 +262,7 @@ class Preprocess:
 # Punctuation removal
 
     @staticmethod
-    def __remove_punctuation_row(row: pd.DataFrame) -> str:
+    def __punctuation_remove_row(row: pd.DataFrame) -> str:
         """
         remove punctuation from text
         :param row: row from dataframe
@@ -271,18 +271,18 @@ class Preprocess:
         return "".join([char for char in row['text']
                         if char not in string.punctuation])
 
-    def _remove_punctuation(self) -> None:
+    def punctuation_remove(self) -> None:
         """
         method removes punctuation from whole dataset
         """
         self.df['text'] = self.df.apply(
-            lambda row: self.__remove_punctuation_row(row), axis=1
+            lambda row: self.__punctuation_remove_row(row), axis=1
             )
 
 # Lemmatization
 
     @staticmethod
-    def _lemmatize_text(row: pd.DataFrame) -> str:
+    def __lemmatize_text_row(row: pd.DataFrame) -> str:
         """
         method performs lemmatization on one row
         :param row: row from dataframe
@@ -294,12 +294,12 @@ class Preprocess:
 
         return ' '.join(new_text)
 
-    def lemmatize(self) -> None:
+    def lemmatization(self) -> None:
         """
         method performs lemmatization on whole dataframe
         """
         self.df['text'] = self.df.apply(
-            lambda row: self._lemmatize_text(row), axis=1
+            lambda row: self.__lemmatize_text_row(row), axis=1
             )
 
 # Stopwords removal
@@ -308,7 +308,7 @@ class Preprocess:
     def __remove_stopwords_row(row: pd.DataFrame) -> str:
         """
         method performs removing stopwords on whole dataframe
-        :param row: row from ddataframe
+        :param row: row from dataframe
         :return: text without stopwords
         """
         text_tokens = word_tokenize(row['text'])
