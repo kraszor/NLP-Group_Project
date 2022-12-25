@@ -5,7 +5,9 @@ import string
 
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
 from textblob import TextBlob
+
 
 
 MENTAL_HEALTH = './data/Mental-Health-Twitter.csv'
@@ -294,4 +296,27 @@ class Preprocess:
         """
         self.df['text'] = self.df.apply(
             lambda row: self._lemmatize_text(row), axis=1
+            )
+
+# Stopwords removal
+
+    @staticmethod
+    def __remove_stopwords_row(row: pd.DataFrame) -> str:
+        """
+        method performs removing stopwords on whole dataframe
+        :param row: row from ddataframe
+        :return: text without stopwords
+        """
+        text_tokens = word_tokenize(row['text'])
+        tokens_without_sw = [word for word in text_tokens
+                             if word not in stopwords.words()]
+
+        return ' '.join(tokens_without_sw)
+
+    def remove_stopwords(self) -> None:
+        """
+        method performs removing stopwords on whole dataframe
+        """
+        self.df['text'] = self.df.apply(
+            lambda row: self.__remove_stopwords_row(row), axis=1
             )
