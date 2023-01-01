@@ -15,34 +15,34 @@ from sklearn.metrics import (f1_score, accuracy_score,
 from sklearn.model_selection import GridSearchCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.compose import ColumnTransformer
 import matplotlib.pyplot as plt
 
 
 PARAM_GRID = {'logistic_regression': {"C": np.logspace(-3, 3, 7),
-                                      "penalty": ["l1", "l2"]},
+                                      "penalty": ["l1"],
+                                      "solver": ["liblinear"]},
               'decision_tree': {'criterion': ['gini', 'entropy'],
-                                'max_depth': [4, 5, 6, 7, 8, 9,
-                                              10, 11, 12, 15, 20,
-                                              30, 40, 50, 70, 90,
-                                              120, 150]},
+                                'max_depth': [25, 30, 50, 100, 120]},
               'naive_bayes': {'alpha': [0.00001, 0.0001, 0.001,
                                         0.1, 1, 10, 100, 1000]},
-              'k_nearest_neighbors': {'n_neighbors': list(range(1, 31))},
-              'random_forest': {'n_estimators': [200, 500],
+              'k_nearest_neighbors': {'n_neighbors': list(range(2, 50))},
+              'random_forest': {'n_estimators': [400],
                                 'max_features': ['auto', 'sqrt', 'log2'],
-                                'max_depth': [4, 5, 6, 7, 8],
+                                'max_depth': [70, None],
                                 'criterion': ['gini', 'entropy']},
               'svc': {'C': [0.1, 0.5, 1, 10, 100, 1000],
                       'penalty': ('l1', 'l2'),
-                      'loss': ('hinge', 'squared_hinge')}}
+                      'loss': ('hinge', 'squared_hinge'),
+                      'max_iter': [10000]}}
 
 
 class ModelsTraining:
-    def __init__(self, train_data, val_data=(None, None)) -> None:
+    def __init__(self, train_data, dataset="") -> None:
         self.train_x = train_data[0]
         self.train_y = train_data[1]
-        self.val_x = val_data[0]
-        self.val_y = val_data[1]
+        self.dataset = dataset
         self.__logistic_regression = LogisticRegression(random_state=42)
         self.__nb = MultinomialNB()
         self.__decision_tree = DecisionTreeClassifier(random_state=42)
@@ -51,13 +51,14 @@ class ModelsTraining:
         self.__svc = LinearSVC(random_state=42)
 
     def grid_search_fit(self, param_grid, model, metric):
-        if not os.path.isfile(f'models/{model}.pkl'):
+        if not os.path.isfile(f'models/{self.dataset}_{model}.pkl'):
             grid_search = GridSearchCV(model, param_grid, cv=5,
                                        scoring=metric,
                                        return_train_score=False)
             grid_search.fit(self.train_x, self.train_y)
+            print(grid_search.best_params_)
             pickle.dump(grid_search.best_estimator_,
-                        open(f'models/{model}.pkl', 'wb'))
+                        open(f'models/{self.dataset}_{model}.pkl', 'wb'))
 
     def train_models(self, param_grid):
         self.grid_search_fit(param_grid['logistic_regression'],
@@ -115,13 +116,55 @@ class ModelsEval:
         return disp
 
 
+def disaster_subset(df):
+    df = df[["text", "target",
+             "hashtags", "polarity",
+             "subjectivity"]]
+    return df
+
+
+def mental_healt_subset(df):
+    df = df[["text", "target",
+             "hashtags",
+             "polarity", "subjectivity"]]
+    return df
+
+
+def suspicious_communication_subset(df):
+    df = df[["text", "target",
+             "hashtags",
+             "polarity", "subjectivity"]]
+    return df
+
+
 def read_df(json_path):
-    df = pd.read_json(json_path)
-    tfidf = TfidfVectorizer()
-    X_tfidf = tfidf.fit_transform(df['text'])
-    X_tfidf = pd.DataFrame(X_tfidf.toarray())
+    df = pd.read_json(json_path, lines=True)
+    if "disaster" in json_path:
+        df = disaster_subset(df)
+        # df['keyword'] = df["keyword"].fillna('')
+    elif "mental_health" in json_path:
+        df = mental_healt_subset(df)
+    elif "suspicious_communiaction" in json_path:
+        df = suspicious_communication_subset(df)
+    tfidf = TfidfVectorizer(min_df=5, max_df=0.9)
+    tfidf3 = TfidfVectorizer(min_df=5, max_df=0.9)
+    scaler = MinMaxScaler()
+    df[["polarity"]] = scaler.fit_transform(df[["polarity"]])
+    df['hashtags'] = df['hashtags'].apply(lambda x: ' '.join(map(str, x)))
+    # df['text'] = df[['text', 'hashtags']].fillna('').agg(' '.join, axis=1)
+    column_transformer = ColumnTransformer(
+                                           [('tfidf1', tfidf, 'text'),
+                                            ('tfidf3', tfidf3, 'hashtags')],
+                                           remainder='drop')
+    X_tfidf = pd.DataFrame(column_transformer.fit_transform(df).toarray())
+    X_tfidf.columns = column_transformer.get_feature_names_out()
+    # X_tfidf = tfidf.fit_transform(df['text'])
+    # X_tfidf = pd.DataFrame(X_tfidf.toarray())
+    # column_transformer.columns = column_transformer.get_feature_names_out()
+    # X_tfidf.columns = tfidf.get_feature_names_out()
     df_y = df['target']
     df = df.drop(['text'], axis=1)
+    df = df.drop(['hashtags'], axis=1)
     df_X = pd.concat([X_tfidf, df.loc[:, df.columns != 'target']], axis=1)
     X_train, X_test, y_train, y_test = train_test_split(df_X, df_y,
                                                         test_size=0.2,
@@ -130,17 +173,22 @@ def read_df(json_path):
 
 
 class ModelsComparison:
-    def __init__(self, df_train, df_test) -> None:
+    def __init__(self, df_train, df_test, dataset="") -> None:
         self.df_train = df_train
         self.df_test = df_test
-        self.train = ModelsTraining(df_train)
+        self.dataset = dataset
+        self.train = ModelsTraining(df_train, dataset)
         self.predict = ModelsPredict(df_test, df_train)
         self.eval = ModelsEval()
+        self.models = None
+
+    def train_all(self):
+        self.models = self.train.train_models(PARAM_GRID)
 
     def compare(self):
-        models = self.train.train_models(PARAM_GRID)
-        for model in models:
-            loaded_model = pickle.load(open(f'models/{model}.pkl', 'rb'))
+        for model in self.models:
+            loaded_model = pickle.load(open(f'models/{self.dataset}_{model}.pkl',
+                                            'rb'))
             print(model)
             print("Training stats\n")
             y_hat = self.predict.predict_train(loaded_model)
@@ -149,8 +197,8 @@ class ModelsComparison:
             cm = self.eval.conf_matrix(self.df_train[1], y_hat)
             print(score)
             print(report)
-            cm.plot()
-            plt.show()
+            # cm.plot()
+            # plt.show()
             print("Test stats\n")
             y_hat = self.predict.predict_test(loaded_model)
             score, curve, report = self.eval.eval_metrics(self.df_test[1],
@@ -158,5 +206,5 @@ class ModelsComparison:
             cm = self.eval.conf_matrix(self.df_test[1], y_hat)
             print(score)
             print(report)
-            cm.plot()
-            plt.show()
+            # cm.plot()
+            # plt.show()
