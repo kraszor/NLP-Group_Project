@@ -1,0 +1,11 @@
+LogisticRegression(random_state=42)
+Training stats
+Accuracy: 0.88725
+F1 Score: 0.8590184432635197
+ROC AUC Score: 0.8859571922017367
+
+Test stats
+Accuracy: 0.7843039240189953
+F1 Score: 0.7421571556617866
+ROC AUC Score: 0.7848747779026476
+

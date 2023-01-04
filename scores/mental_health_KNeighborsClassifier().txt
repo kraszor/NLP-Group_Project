@@ -1,0 +1,11 @@
+KNeighborsClassifier()
+Training stats
+Accuracy: 0.8321875
+F1 Score: 0.8317141961767471
+ROC AUC Score: 0.8321855143589171
+
+Test stats
+Accuracy: 0.65375
+F1 Score: 0.6405398390864262
+ROC AUC Score: 0.6541581627741904
+

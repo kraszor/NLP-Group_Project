@@ -1,0 +1,11 @@
+LinearSVC(random_state=42)
+Training stats
+Accuracy: 0.8470625
+F1 Score: 0.8446053216485679
+ROC AUC Score: 0.8470297230895317
+
+Test stats
+Accuracy: 0.753
+F1 Score: 0.749238578680203
+ROC AUC Score: 0.7532104772455714
+

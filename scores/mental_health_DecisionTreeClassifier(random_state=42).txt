@@ -1,0 +1,11 @@
+DecisionTreeClassifier(random_state=42)
+Training stats
+Accuracy: 0.7679375
+F1 Score: 0.7765541313113077
+ROC AUC Score: 0.7680334181259991
+
+Test stats
+Accuracy: 0.6785
+F1 Score: 0.6942463147883976
+ROC AUC Score: 0.6780719459931259
+
