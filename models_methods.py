@@ -107,7 +107,7 @@ class ModelsEval:
         f1 = f"F1 Score: {f1_score(y, y_hat)}\n"
         curve = roc_curve(y, y_hat)
         roc_score = f"ROC AUC Score: {roc_auc_score(y, y_hat)}\n"
-        report = classification_report(y, y_hat)
+        report = classification_report(y, y_hat, output_dict=True)
         return accuracy + f1 + roc_score, curve, report
 
     def conf_matrix(self, y, y_hat):
@@ -139,29 +139,20 @@ def suspicious_communication_subset(df):
 
 def read_df(json_path):
     df = pd.read_json(json_path, lines=True)
-    if "disaster" in json_path:
-        df = disaster_subset(df)
-        # df['keyword'] = df["keyword"].fillna('')
-    elif "mental_health" in json_path:
-        df = mental_healt_subset(df)
-    elif "suspicious_communiaction" in json_path:
-        df = suspicious_communication_subset(df)
+    df = df[["text", "target",
+             "hashtags", "polarity",
+             "subjectivity"]]
     tfidf = TfidfVectorizer(min_df=5, max_df=0.9)
     tfidf3 = TfidfVectorizer(min_df=5, max_df=0.9)
     scaler = MinMaxScaler()
     df[["polarity"]] = scaler.fit_transform(df[["polarity"]])
     df['hashtags'] = df['hashtags'].apply(lambda x: ' '.join(map(str, x)))
-    # df['text'] = df[['text', 'hashtags']].fillna('').agg(' '.join, axis=1)
     column_transformer = ColumnTransformer(
                                            [('tfidf1', tfidf, 'text'),
                                             ('tfidf3', tfidf3, 'hashtags')],
                                            remainder='drop')
     X_tfidf = pd.DataFrame(column_transformer.fit_transform(df).toarray())
     X_tfidf.columns = column_transformer.get_feature_names_out()
-    # X_tfidf = tfidf.fit_transform(df['text'])
-    # X_tfidf = pd.DataFrame(X_tfidf.toarray())
-    # column_transformer.columns = column_transformer.get_feature_names_out()
-    # X_tfidf.columns = tfidf.get_feature_names_out()
     df_y = df['target']
     df = df.drop(['text'], axis=1)
     df = df.drop(['hashtags'], axis=1)
@@ -187,24 +178,38 @@ class ModelsComparison:
 
     def compare(self):
         for model in self.models:
-            loaded_model = pickle.load(open(f'models/{self.dataset}_{model}.pkl',
-                                            'rb'))
+            output = ""
+            with open(f'models/{self.dataset}_{model}.pkl', 'rb') as f:
+                loaded_model = pickle.load(f)
             print(model)
+            output += str(model) + "\n"
             print("Training stats\n")
+            output += "Training stats\n"
             y_hat = self.predict.predict_train(loaded_model)
             score, curve, report = self.eval.eval_metrics(self.df_train[1],
                                                           y_hat)
             cm = self.eval.conf_matrix(self.df_train[1], y_hat)
+            df_report = pd.DataFrame(report)
+            df_report.to_json(f'report/train_{self.dataset}_{model}_report.json')
+            output += str(score) + "\n"
             print(score)
             print(report)
-            # cm.plot()
+            cm = cm.plot()
+            cm.figure_.savefig(f'cm/train_{self.dataset}_{model}_cm.png')
             # plt.show()
             print("Test stats\n")
+            output += "Test stats\n"
             y_hat = self.predict.predict_test(loaded_model)
             score, curve, report = self.eval.eval_metrics(self.df_test[1],
                                                           y_hat)
             cm = self.eval.conf_matrix(self.df_test[1], y_hat)
+            df_report = pd.DataFrame(report)
+            df_report.to_json(f'report/test_{self.dataset}_{model}_report.json')
             print(score)
+            output += str(score) + "\n"
             print(report)
-            # cm.plot()
+            cm = cm.plot()
+            cm.figure_.savefig(f'cm/test_{self.dataset}_{model}_cm.png')
             # plt.show()
+            with open(f'scores/{self.dataset}_{model}.txt', "a") as text_file:
+                text_file.write(output)
