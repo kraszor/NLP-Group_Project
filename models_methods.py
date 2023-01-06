@@ -116,27 +116,6 @@ class ModelsEval:
         return disp
 
 
-def disaster_subset(df):
-    df = df[["text", "target",
-             "hashtags", "polarity",
-             "subjectivity"]]
-    return df
-
-
-def mental_healt_subset(df):
-    df = df[["text", "target",
-             "hashtags",
-             "polarity", "subjectivity"]]
-    return df
-
-
-def suspicious_communication_subset(df):
-    df = df[["text", "target",
-             "hashtags",
-             "polarity", "subjectivity"]]
-    return df
-
-
 def read_df(json_path):
     df = pd.read_json(json_path, lines=True)
     df = df[["text", "target",
