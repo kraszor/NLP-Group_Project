@@ -105,10 +105,9 @@ class ModelsEval:
     def eval_metrics(self, y, y_hat):
         accuracy = f"Accuracy: {accuracy_score(y, y_hat)}\n"
         f1 = f"F1 Score: {f1_score(y, y_hat)}\n"
-        curve = roc_curve(y, y_hat)
-        roc_score = f"ROC AUC Score: {roc_auc_score(y, y_hat)}\n"
-        report = classification_report(y, y_hat, output_dict=True)
-        return accuracy + f1 + roc_score, curve, report
+        precision = f"Precision: {precision_score(y, y_hat)}\n"
+        recall = f"Recall: {recall_score(y, y_hat)}\n"
+        return accuracy + f1 + precision + recall
 
     def conf_matrix(self, y, y_hat):
         cm = confusion_matrix(y, y_hat)
@@ -155,7 +154,7 @@ class ModelsComparison:
     def train_all(self):
         self.models = self.train.train_models(PARAM_GRID)
 
-    def compare(self):
+   def compare(self):
         for model in self.models:
             output = ""
             with open(f'models/{self.dataset}_{model}.pkl', 'rb') as f:
@@ -165,30 +164,24 @@ class ModelsComparison:
             print("Training stats\n")
             output += "Training stats\n"
             y_hat = self.predict.predict_train(loaded_model)
-            score, curve, report = self.eval.eval_metrics(self.df_train[1],
-                                                          y_hat)
+            score = self.eval.eval_metrics(self.df_train[1],
+                                           y_hat)
             cm = self.eval.conf_matrix(self.df_train[1], y_hat)
-            df_report = pd.DataFrame(report)
-            df_report.to_json(f'report/train_{self.dataset}_{model}_report.json')
             output += str(score) + "\n"
             print(score)
-            print(report)
             cm = cm.plot()
             cm.figure_.savefig(f'cm/train_{self.dataset}_{model}_cm.png')
-            # plt.show()
             print("Test stats\n")
             output += "Test stats\n"
             y_hat = self.predict.predict_test(loaded_model)
-            score, curve, report = self.eval.eval_metrics(self.df_test[1],
-                                                          y_hat)
+            score = self.eval.eval_metrics(self.df_test[1],
+                                           y_hat)
             cm = self.eval.conf_matrix(self.df_test[1], y_hat)
-            df_report = pd.DataFrame(report)
-            df_report.to_json(f'report/test_{self.dataset}_{model}_report.json')
             print(score)
             output += str(score) + "\n"
-            print(report)
             cm = cm.plot()
             cm.figure_.savefig(f'cm/test_{self.dataset}_{model}_cm.png')
-            # plt.show()
+            plt.show()
             with open(f'scores/{self.dataset}_{model}.txt', "a") as text_file:
                 text_file.write(output)
+
