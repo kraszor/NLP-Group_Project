@@ -2,10 +2,12 @@ RandomForestClassifier(random_state=42)
 Training stats
 Accuracy: 0.9678125
 F1 Score: 0.9671618950455907
-ROC AUC Score: 0.9677709041452561
+Precision: 0.9846793040768631
+Recall: 0.9502568600426011
 
 Test stats
 Accuracy: 0.74575
 F1 Score: 0.747830399206546
-ROC AUC Score: 0.7457389279382465
+Precision: 0.7487586891757696
+Recall: 0.7469044081228331
 
