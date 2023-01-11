@@ -115,28 +115,86 @@ class ModelsEval:
         return disp
 
 
-def read_df(json_path):
-    df = pd.read_json(json_path, lines=True)
-    df = df[["text", "target",
+def disaster_subset(df):
+    df = df[["text", "target", "links",
+             "is_retweet",
+             "references", "emojis",
              "hashtags", "polarity",
              "subjectivity"]]
-    tfidf = TfidfVectorizer(min_df=5, max_df=0.9)
-    tfidf3 = TfidfVectorizer(min_df=5, max_df=0.9)
+    return df
+
+
+def mental_healt_subset(df):
+    df = df[["text", "target", "followers",
+             "friends", "favourites",
+             "retweets", "links", "is_retweet",
+             "references", "emojis",
+             "hashtags",
+             "polarity", "subjectivity"]]
+    return df
+
+
+def suspicious_communication_subset(df):
+    df = df[["text", "target", "links",
+             "is_retweet",
+             "references", "emojis",
+             "hashtags",
+             "polarity", "subjectivity"]]
+    return df
+
+
+def read_df(json_path):
+    df = pd.read_json(json_path, lines=True)
+    if "disaster" in json_path:
+        df = disaster_subset(df)
+    elif "mental_health" in json_path:
+        df = mental_healt_subset(df)
+        scaler_followers = MinMaxScaler()
+        scaler_retweets = MinMaxScaler()
+        scaler_friends = MinMaxScaler()
+        scaler_favourites = MinMaxScaler()
+        df[['followers']] = scaler_followers.fit_transform(df[['followers']])
+        df[['retweets']] = scaler_retweets.fit_transform(df[['retweets']])
+        df[['friends']] = scaler_friends.fit_transform(df[['friends']])
+        df[['favourites']] = scaler_favourites.fit_transform(df[['favourites']])
+    elif "suspicious_communiaction" in json_path:
+        df = suspicious_communication_subset(df)
+    df = df.sample(frac=1, random_state=42)
+    tfidf = TfidfVectorizer(min_df=10)
+    tfidf2 = TfidfVectorizer()
+    tfidf3 = TfidfVectorizer(min_df=10)
     scaler = MinMaxScaler()
+    scaler_links = MinMaxScaler()
+    scaler_references = MinMaxScaler()
+    scaler_isretweet = MinMaxScaler()
     df[["polarity"]] = scaler.fit_transform(df[["polarity"]])
+    df['links'] = df['links'].map(len)
+    df['references'] = df['references'].map(len)
     df['hashtags'] = df['hashtags'].apply(lambda x: ' '.join(map(str, x)))
-    column_transformer = ColumnTransformer(
-                                           [('tfidf1', tfidf, 'text'),
-                                            ('tfidf3', tfidf3, 'hashtags')],
-                                           remainder='drop')
+    df['emojis'] = df['emojis'].apply(lambda x: ' '.join(map(str, x)))
+    df[['links']] = scaler_links.fit_transform(df[['links']])
+    df[['references']] = scaler_references.fit_transform(df[['references']])
+    df[['is_retweet']] = scaler_isretweet.fit_transform(df[['is_retweet']])
+    if "suspicious_communiaction" not in json_path:
+        column_transformer = ColumnTransformer(
+                                               [('tfidf1', tfidf, 'text'),
+                                                ('tfidf2', tfidf2, 'emojis'),
+                                                ('tfidf3', tfidf3, 'hashtags')],
+                                               remainder='drop')
+    else:
+        column_transformer = ColumnTransformer(
+                                               [('tfidf1', tfidf, 'text'),
+                                                ('tfidf3', tfidf3, 'hashtags')],
+                                               remainder='drop')
     X_tfidf = pd.DataFrame(column_transformer.fit_transform(df).toarray())
     X_tfidf.columns = column_transformer.get_feature_names_out()
     df_y = df['target']
     df = df.drop(['text'], axis=1)
     df = df.drop(['hashtags'], axis=1)
+    df = df.drop(['emojis'], axis=1)
     df_X = pd.concat([X_tfidf, df.loc[:, df.columns != 'target']], axis=1)
     X_train, X_test, y_train, y_test = train_test_split(df_X, df_y,
-                                                        test_size=0.2,
+                                                        test_size=0.25,
                                                         random_state=42)
     return X_train, X_test, y_train, y_test
 
@@ -154,7 +212,7 @@ class ModelsComparison:
     def train_all(self):
         self.models = self.train.train_models(PARAM_GRID)
 
-   def compare(self):
+    def compare(self):
         for model in self.models:
             output = ""
             with open(f'models/{self.dataset}_{model}.pkl', 'rb') as f:
@@ -169,8 +227,8 @@ class ModelsComparison:
             cm = self.eval.conf_matrix(self.df_train[1], y_hat)
             output += str(score) + "\n"
             print(score)
-            cm = cm.plot()
-            cm.figure_.savefig(f'cm/train_{self.dataset}_{model}_cm.png')
+            # cm = cm.plot()
+            # cm.figure_.savefig(f'cm/train_{self.dataset}_{model}_cm.png')
             print("Test stats\n")
             output += "Test stats\n"
             y_hat = self.predict.predict_test(loaded_model)
@@ -179,9 +237,10 @@ class ModelsComparison:
             cm = self.eval.conf_matrix(self.df_test[1], y_hat)
             print(score)
             output += str(score) + "\n"
-            cm = cm.plot()
-            cm.figure_.savefig(f'cm/test_{self.dataset}_{model}_cm.png')
-            plt.show()
+            # cm = cm.plot()
+            # cm.figure_.savefig(f'cm/test_{self.dataset}_{model}_cm.png')
+            # plt.show()
             with open(f'scores/{self.dataset}_{model}.txt', "a") as text_file:
                 text_file.write(output)
+
 
